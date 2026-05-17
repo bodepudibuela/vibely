@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Notifications — Vibely</title>
+  <link rel="stylesheet" href="../css/main.css"/>
+  <style>
+    .notif-page { max-width: 640px; margin: 0 auto; }
+    .notif-page h2 { font-family: var(--font-display); font-size: 1.6rem; margin-bottom: 24px; }
+    .notif-list { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .notif-item { transition: background var(--transition); }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-type-icon { font-size: 1.1rem; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+<div class="vb-layout">
+  <div class="vb-main">
+    <div class="notif-page">
+      <h2>🔔 Notifications</h2>
+      <div id="notif-container">
+        <div class="spinner"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script src="../js/layout.js"></script>
+<script src="../js/socket.js"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', async () => {
+    if (!Session.requireAuth('login.html')) return;
+    renderLayout('notifications');
+    initSocket();
+    await loadNotifications();
+    // Reset badge
+    ['notif-badge','notif-badge-mobile'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.textContent = '0'; el.style.display = 'none'; }
+    });
+  });
+
+  async function loadNotifications() {
+    const container = document.getElementById('notif-container');
+    try {
+      const data = await API.Users.notifications();
+      const notifs = data.notifications;
+
+      if (!notifs.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state__icon">🔕</div>
+            <div class="empty-state__title">All caught up!</div>
+            <p class="empty-state__text">No notifications yet. Start connecting with people.</p>
+          </div>`;
+        return;
+      }
+
+      const typeIcon = { like: '❤️', comment: '💬', follow: '👤', mention: '📣' };
+      const typeText = {
+        like:    'liked your post',
+        comment: 'commented on your post',
+        follow:  'started following you',
+        mention: 'mentioned you in a comment',
+      };
+
+      container.innerHTML = `
+        <div class="notif-list">
+          ${notifs.map(n => `
+            <div class="notif-item ${n.is_read ? '' : 'unread'}"
+                 onclick="${n.post_id ? `window.location.href='post.html?id=${n.post_id}'` : `window.location.href='profile.html?u=${n.actor_username}'`}"
+                 style="cursor:pointer;">
+              <img src="${Helpers.avatarUrl(n.actor_avatar)}" alt="${n.actor_username}"
+                   onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(n.actor_username)}&background=FF6B35&color=fff'"/>
+              <div class="notif-text">
+                <strong>${n.actor_username}</strong> ${typeText[n.type] || n.type}
+              </div>
+              <span class="notif-type-icon">${typeIcon[n.type] || '🔔'}</span>
+              <span class="notif-time">${Helpers.timeAgo(n.created_at)}</span>
+            </div>`).join('')}
+        </div>`;
+    } catch (err) {
+      container.innerHTML = `<p style="color:#e74c3c;padding:16px;">${err.message}</p>`;
+    }
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Profile — Vibely</title>
+  <link rel="stylesheet" href="../css/main.css"/>
+  <style>
+    .profile-page { max-width: 860px; margin: 0 auto; }
+
+    .profile-banner {
+      height: 180px;
+      background: linear-gradient(135deg, #1a1a2e, #FF6B35 80%, #6C63FF);
+      border-radius: var(--radius-lg);
+      margin-bottom: 0;
+    }
+
+    .profile-info-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 20px;
+      padding: 0 24px;
+      margin-top: -50px;
+      margin-bottom: 20px;
+    }
+
+    .profile-avatar-wrap {
+      position: relative; flex-shrink: 0;
+    }
+    .profile-avatar-wrap img {
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      border: 4px solid var(--bg);
+      object-fit: cover;
+      background: var(--bg-input);
+    }
+    .avatar-edit-btn {
+      position: absolute; bottom: 4px; right: 4px;
+      background: var(--brand); color: white;
+      border: 2px solid var(--bg); border-radius: 50%;
+      width: 28px; height: 28px;
+      font-size: 0.75rem;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+
+    .profile-meta { flex: 1; padding-bottom: 8px; }
+    .profile-name { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; line-height: 1.2; }
+    .profile-handle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 6px; }
+    .profile-bio { font-size: 0.92rem; color: var(--text-secondary); max-width: 480px; }
+    .profile-website { font-size: 0.82rem; color: var(--accent); margin-top: 4px; }
+
+    .profile-actions { display: flex; gap: 10px; padding-bottom: 8px; flex-shrink: 0; }
+
+    .profile-stats-row {
+      display: flex; gap: 28px;
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      margin-bottom: 24px;
+    }
+
+    /* Posts grid */
+    .posts-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+    }
+    .posts-grid-item {
+      aspect-ratio: 1;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      background: var(--bg-input);
+      border-radius: 4px;
+    }
+    .posts-grid-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+    .posts-grid-item:hover img { transform: scale(1.05); }
+    .posts-grid-item__overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex; align-items: center; justify-content: center;
+      gap: 16px; color: white; font-weight: 700; font-size: 0.9rem;
+      opacity: 0; transition: opacity 0.2s;
+    }
+    .posts-grid-item:hover .posts-grid-item__overlay { opacity: 1; }
+    .posts-grid-item__text {
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px; font-size: 0.88rem; color: var(--text-secondary); height: 100%;
+      text-align: center;
+    }
+
+    /* Edit profile modal */
+    .avatar-upload-preview {
+      display: flex; align-items: center; gap: 16px; margin-bottom: 16px;
+    }
+    .avatar-upload-preview img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; }
+
+    @media (max-width: 600px) {
+      .profile-info-row { flex-wrap: wrap; }
+      .profile-actions { margin-top: 8px; }
+      .posts-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="vb-layout">
+  <div class="vb-main">
+    <div class="profile-page">
+
+      <!-- Skeleton / loading state -->
+      <div id="profile-loading">
+        <div class="skeleton" style="height:180px;border-radius:var(--radius-lg);margin-bottom:0;"></div>
+        <div style="padding:0 24px;margin-top:-50px;display:flex;gap:20px;align-items:flex-end;">
+          <div class="skeleton" style="width:100px;height:100px;border-radius:50%;flex-shrink:0;"></div>
+          <div style="flex:1;padding-bottom:8px;">
+            <div class="skeleton" style="height:24px;width:200px;margin-bottom:8px;"></div>
+            <div class="skeleton" style="height:16px;width:140px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actual profile -->
+      <div id="profile-content" style="display:none;">
+        <div class="profile-banner"></div>
+
+        <div class="profile-info-row">
+          <div class="profile-avatar-wrap">
+            <img id="profile-avatar" src="" alt="avatar" onerror="this.src='https://ui-avatars.com/api/?name=U&background=FF6B35&color=fff&size=200'"/>
+            <div class="avatar-edit-btn" id="avatar-edit-btn" style="display:none" onclick="document.getElementById('avatar-file').click()" title="Change photo">📷</div>
+            <input type="file" id="avatar-file" accept="image/*" style="display:none"/>
+          </div>
+
+          <div class="profile-meta">
+            <div class="profile-name" id="profile-name"></div>
+            <div class="profile-handle" id="profile-handle"></div>
+            <div class="profile-bio" id="profile-bio"></div>
+            <div class="profile-website" id="profile-website"></div>
+          </div>
+
+          <div class="profile-actions">
+            <!-- Shown for own profile -->
+            <button class="btn btn-secondary btn-sm" id="edit-profile-btn" style="display:none" onclick="openEditProfile()">Edit Profile</button>
+            <button class="btn btn-danger btn-sm" id="logout-btn" style="display:none" onclick="doLogout()">Logout</button>
+            <!-- Shown for other profiles -->
+            <button class="btn btn-primary btn-sm follow-btn" id="follow-btn" style="display:none">Follow</button>
+          </div>
+        </div>
+
+        <div class="profile-stats-row">
+          <div class="stat-item" id="stat-posts">
+            <div class="stat-value" id="posts-count">0</div>
+            <div class="stat-label">Posts</div>
+          </div>
+          <div class="stat-item" onclick="showFollowModal('followers')" style="cursor:pointer;">
+            <div class="stat-value" id="followers-count">0</div>
+            <div class="stat-label">Followers</div>
+          </div>
+          <div class="stat-item" onclick="showFollowModal('following')" style="cursor:pointer;">
+            <div class="stat-value" id="following-count">0</div>
+            <div class="stat-label">Following</div>
+          </div>
+        </div>
+
+        <!-- Posts grid -->
+        <div class="posts-grid" id="posts-grid"></div>
+        <div class="spinner" id="posts-spinner"></div>
+        <div class="empty-state" id="no-posts" style="display:none;">
+          <div class="empty-state__icon">📸</div>
+          <div class="empty-state__title">No posts yet</div>
+          <p class="empty-state__text" id="no-posts-text"></p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Followers/Following modal -->
+<div class="modal-overlay" id="follow-modal-overlay">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal__header">
+      <h3 class="modal__title" id="follow-modal-title">Followers</h3>
+      <button class="modal__close" onclick="document.getElementById('follow-modal-overlay').classList.remove('open')">✕</button>
+    </div>
+    <div id="follow-modal-list" style="max-height:380px;overflow-y:auto;"></div>
+  </div>
+</div>
+
+<!-- Edit profile modal -->
+<div class="modal-overlay" id="edit-profile-overlay">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal__header">
+      <h3 class="modal__title">Edit Profile</h3>
+      <button class="modal__close" onclick="document.getElementById('edit-profile-overlay').classList.remove('open')">✕</button>
+    </div>
+    <div class="avatar-upload-preview">
+      <img id="edit-avatar-preview" src="" alt="avatar"/>
+      <div>
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('edit-avatar-input').click()">Change Photo</button>
+        <input type="file" id="edit-avatar-input" accept="image/*" style="display:none"/>
+        <p style="font-size:.75rem;color:var(--text-muted);margin-top:4px;">Max 5 MB</p>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Full Name</label>
+      <input class="form-input" id="edit-fullname" placeholder="Your full name"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Bio</label>
+      <textarea class="form-input" id="edit-bio" rows="3" placeholder="Tell the world about yourself…"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Website</label>
+      <input class="form-input" id="edit-website" placeholder="https://yoursite.com"/>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn btn-secondary" onclick="document.getElementById('edit-profile-overlay').classList.remove('open')">Cancel</button>
+      <button class="btn btn-primary" id="save-profile-btn" onclick="saveProfile()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script src="../js/layout.js"></script>
+<script src="../js/socket.js"></script>
+<script>
+  let profileUser = null;
+
+  window.addEventListener('DOMContentLoaded', async () => {
+    if (!Session.requireAuth('login.html')) return;
+    renderLayout('profile');
+    initSocket();
+
+    const params   = new URLSearchParams(window.location.search);
+    const username = params.get('u') || Session.getUser().username;
+    await loadProfile(username);
+  });
+
+  async function loadProfile(username) {
+    try {
+      const data = await API.Users.getProfile(username);
+      profileUser = data.user;
+      renderProfile(data.user);
+      loadUserPosts(data.user.id);
+    } catch (err) {
+      document.getElementById('profile-loading').innerHTML = `
+        <div class="empty-state"><div class="empty-state__icon">😕</div>
+        <div class="empty-state__title">User not found</div></div>`;
+    }
+  }
+
+  function renderProfile(u) {
+    const me    = Session.getUser();
+    const isMe  = me && me.id === u.id;
+
+    document.title = `${u.username} — Vibely`;
+
+    document.getElementById('profile-loading').style.display = 'none';
+    document.getElementById('profile-content').style.display = 'block';
+
+    const avatarSrc = u.avatar && u.avatar !== 'default-avatar.png'
+      ? `http://localhost:5000/uploads/avatars/${u.avatar}`
+      : `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=FF6B35&color=fff&size=200`;
+
+    document.getElementById('profile-avatar').src = avatarSrc;
+    document.getElementById('profile-name').textContent    = u.full_name || u.username;
+    document.getElementById('profile-handle').textContent  = `@${u.username}`;
+    document.getElementById('profile-bio').textContent     = u.bio || '';
+    const webEl = document.getElementById('profile-website');
+    if (u.website) { webEl.innerHTML = `<a href="${u.website}" target="_blank" rel="noopener">🔗 ${u.website}</a>`; }
+
+    document.getElementById('posts-count').textContent     = u.posts_count;
+    document.getElementById('followers-count').textContent = u.followers_count;
+    document.getElementById('following-count').textContent = u.following_count;
+
+    if (isMe) {
+      document.getElementById('edit-profile-btn').style.display = 'inline-flex';
+      document.getElementById('logout-btn').style.display       = 'inline-flex';
+      document.getElementById('avatar-edit-btn').style.display  = 'flex';
+      setupAvatarUpload();
+    } else {
+      const followBtn = document.getElementById('follow-btn');
+      followBtn.style.display  = 'inline-flex';
+      followBtn.textContent    = u.is_following ? 'Following' : 'Follow';
+      followBtn.classList.toggle('following', !!u.is_following);
+      followBtn.addEventListener('click', async () => {
+        try {
+          const res = await API.Users.follow(u.id);
+          followBtn.textContent = res.following ? 'Following' : 'Follow';
+          followBtn.classList.toggle('following', res.following);
+          const fcEl = document.getElementById('followers-count');
+          fcEl.textContent = parseInt(fcEl.textContent) + (res.following ? 1 : -1);
+          profileUser.is_following = res.following;
+        } catch (err) { showToast(err.message, 'error'); }
+      });
+    }
+  }
+
+  // Smart image picker — each post gets a UNIQUE relevant image
+  function getPostImage(post) {
+    const caption = (post.caption || '').toLowerCase();
+    const id = post.id;
+
+    const categoryImages = {
+      food:        [292,431,1080,488,433,326,429,835,493,404,1025,1060,312,452,376],
+      photography: [96,250,364,375,593,667,683,736,753,815,823,870,880,890,901],
+      travel:      [137,338,358,371,428,443,452,461,466,469,474,477,480,490,502],
+      music:       [157,183,224,248,311,374,449,470,531,541,552,560,570,580,590],
+      art:         [159,188,211,219,266,312,322,345,380,386,393,396,410,420,440],
+      technology:  [0,1,2,3,4,5,6,7,8,9,48,119,180,239,299],
+      sports:      [76,115,173,214,247,261,310,328,389,395,441,467,503,543,583],
+      nature:      [15,28,37,39,40,41,42,43,44,45,46,47,51,52,53],
+      fitness:     [185,194,209,225,231,241,253,263,271,281,289,298,307,317,327],
+      books:       [159,160,161,162,163,164,165,166,167,168,169,170,171,172,173],
+      lifestyle:   [64,65,66,67,68,69,70,71,72,73,74,75,77,78,79],
+    };
+
+    const keywords = [
+      { keys: ['food','eat','recipe','cook','biryani','pizza','burger','coffee','snack','street food','restaurant','meal','cuisine','lunch','dinner','breakfast','punugulu','pesarattu','hungry'], cat: 'food' },
+      { keys: ['photo','camera','photography','shot','canon','nikon','lens','capture','portrait','film photography'], cat: 'photography' },
+      { keys: ['travel','trip','tour','visit','destination','journey','adventure','vijayawada','hyderabad','beach','mountain','valley','araku'], cat: 'travel' },
+      { keys: ['music','guitar','song','sing','concert','band','piano','drums','practice log','melody','lo-fi'], cat: 'music' },
+      { keys: ['art','sketch','draw','paint','design','creative','artist','canvas','illustration','inspiration'], cat: 'art' },
+      { keys: ['code','coding','bug','debug','developer','programming','software','javascript','python','tech','laptop'], cat: 'technology' },
+      { keys: ['cricket','match','sport','football','game','player','team','score','stadium','kohli','india vs','australia'], cat: 'sports' },
+      { keys: ['nature','sky','sunset','sunrise','flower','tree','garden','forest','rain','cloud'], cat: 'nature' },
+      { keys: ['gym','workout','exercise','run','yoga','fitness','muscle','rest day','training'], cat: 'fitness' },
+      { keys: ['book','read','study','atomic habits','novel','library','pages','reading'], cat: 'books' },
+    ];
+
+    let cat = 'lifestyle';
+    for (const k of keywords) {
+      if (k.keys.some(kw => caption.includes(kw))) { cat = k.cat; break; }
+    }
+
+    const imgs = categoryImages[cat];
+    const imgId = imgs[id % imgs.length];
+    return `https://picsum.photos/id/${imgId}/400/400`;
+  }
+  async function loadUserPosts(userId) {
+    document.getElementById('posts-spinner').style.display = 'block';
+    try {
+      const data  = await API.Posts.userPosts(userId);
+      const grid  = document.getElementById('posts-grid');
+      const me    = Session.getUser();
+      grid.innerHTML = '';
+
+      if (!data.posts.length) {
+        document.getElementById('no-posts').style.display = 'block';
+        const isMe = me && me.id === userId;
+        document.getElementById('no-posts-text').textContent = isMe
+          ? 'Share your first photo or story!'
+          : 'This user has not posted yet.';
+        return;
+      }
+
+      data.posts.forEach(post => {
+        const item = document.createElement('div');
+        item.className = 'posts-grid-item';
+
+        if (post.image_url) {
+          // Real uploaded image
+          item.innerHTML = `
+            <img src="http://localhost:5000/uploads/posts/${post.image_url}" alt="post" loading="lazy"/>
+            <div class="posts-grid-item__overlay"><span>❤️ ${post.likes_count}</span><span>💬 ${post.comments_count}</span></div>`;
+        } else {
+          // Text post — show a smart image based on caption keywords
+          item.innerHTML = `
+            <img src="${getPostImage(post)}" alt="post" style="width:100%;height:100%;object-fit:cover;" loading="lazy"/>
+            <div class="posts-grid-item__overlay"><span>❤️ ${post.likes_count}</span><span>💬 ${post.comments_count}</span></div>`;
+        }
+
+        item.addEventListener('click', () => window.location.href = `post.html?id=${post.id}`);
+        grid.appendChild(item);
+      });
+    } catch (err) { showToast(err.message, 'error'); }
+    finally { document.getElementById('posts-spinner').style.display = 'none'; }
+  }
+
+  // ─── Follow modal ─────────────────────────────────────────────────────────
+  async function showFollowModal(type) {
+    const overlay = document.getElementById('follow-modal-overlay');
+    const title   = document.getElementById('follow-modal-title');
+    const list    = document.getElementById('follow-modal-list');
+    title.textContent = type === 'followers' ? 'Followers' : 'Following';
+    list.innerHTML    = '<div class="spinner"></div>';
+    overlay.classList.add('open');
+
+    try {
+      const data  = type === 'followers'
+        ? await API.Users.getFollowers(profileUser.id)
+        : await API.Users.getFollowing(profileUser.id);
+      const users = data.followers || data.following || [];
+      if (!users.length) { list.innerHTML = `<p style="text-align:center;padding:20px;color:var(--text-muted);">No ${type} yet.</p>`; return; }
+      list.innerHTML = users.map(u => `
+        <div class="search-result-item" onclick="window.location.href='profile.html?u=${u.username}'">
+          <img src="${Helpers.avatarUrl(u.avatar)}" alt="${u.username}"
+               onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=FF6B35&color=fff'"/>
+          <div>
+            <div class="search-result-name">${u.full_name || u.username}</div>
+            <div class="search-result-user">@${u.username}</div>
+          </div>
+        </div>`).join('');
+    } catch { list.innerHTML = '<p style="padding:16px;color:#e74c3c;">Could not load.</p>'; }
+  }
+
+  document.getElementById('follow-modal-overlay').addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('open');
+  });
+
+  // ─── Edit profile ─────────────────────────────────────────────────────────
+  function openEditProfile() {
+    const u = profileUser;
+    document.getElementById('edit-fullname').value  = u.full_name || '';
+    document.getElementById('edit-bio').value       = u.bio       || '';
+    document.getElementById('edit-website').value   = u.website   || '';
+    const prevImg = document.getElementById('edit-avatar-preview');
+    prevImg.src = document.getElementById('profile-avatar').src;
+    document.getElementById('edit-profile-overlay').classList.add('open');
+
+    // Preview on new file select
+    document.getElementById('edit-avatar-input').addEventListener('change', function() {
+      const f = this.files[0]; if (!f) return;
+      const r = new FileReader(); r.onload = ev => prevImg.src = ev.target.result; r.readAsDataURL(f);
+    });
+  }
+
+  document.getElementById('edit-profile-overlay').addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('open');
+  });
+
+  async function saveProfile() {
+    const btn   = document.getElementById('save-profile-btn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    const fd = new FormData();
+    fd.append('full_name', document.getElementById('edit-fullname').value);
+    fd.append('bio',       document.getElementById('edit-bio').value);
+    fd.append('website',   document.getElementById('edit-website').value);
+    const avatarFile = document.getElementById('edit-avatar-input').files[0];
+    if (avatarFile) fd.append('avatar', avatarFile);
+
+    try {
+      const data = await API.Users.updateProfile(fd);
+      Session.setUser({ ...Session.getUser(), ...data.user });
+      showToast('Profile updated!');
+      document.getElementById('edit-profile-overlay').classList.remove('open');
+      await loadProfile(data.user.username);
+    } catch (err) { showToast(err.message, 'error'); }
+    finally { btn.disabled = false; btn.textContent = 'Save Changes'; }
+  }
+
+  function setupAvatarUpload() {
+    document.getElementById('avatar-file').addEventListener('change', async function() {
+      const f = this.files[0]; if (!f) return;
+      const fd = new FormData();
+      fd.append('avatar', f);
+      fd.append('full_name', profileUser.full_name || '');
+      fd.append('bio',       profileUser.bio       || '');
+      fd.append('website',   profileUser.website   || '');
+      try {
+        const data = await API.Users.updateProfile(fd);
+        Session.setUser({ ...Session.getUser(), ...data.user });
+        const newSrc = data.user.avatar !== 'default-avatar.png'
+          ? `http://localhost:5000/uploads/avatars/${data.user.avatar}`
+          : document.getElementById('profile-avatar').src;
+        document.getElementById('profile-avatar').src = newSrc;
+        showToast('Avatar updated!');
+      } catch (err) { showToast(err.message, 'error'); }
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Post — Vibely</title>
+  <link rel="stylesheet" href="../css/main.css"/>
+  <style>
+    .post-detail { max-width: 680px; margin: 0 auto; }
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;
+      transition: color var(--transition);
+    }
+    .back-btn:hover { color: var(--brand); }
+  </style>
+</head>
+<body>
+<div class="vb-layout">
+  <div class="vb-main">
+    <div class="post-detail">
+      <a class="back-btn" href="javascript:history.back()">← Back</a>
+      <div id="post-container"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script src="../js/layout.js"></script>
+<script src="../js/socket.js"></script>
+<script src="../js/posts.js"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', async () => {
+    if (!Session.requireAuth('login.html')) return;
+    renderLayout('');
+    initSocket();
+
+    const params = new URLSearchParams(window.location.search);
+    const postId = params.get('id');
+    if (!postId) { window.location.href = 'feed.html'; return; }
+    await loadPost(postId);
+  });
+
+  async function loadPost(postId) {
+    const container = document.getElementById('post-container');
+    try {
+      const data = await API.Posts.get(postId);
+      renderPosts([data.post], 'post-container', false);
+      // Auto-open comments
+      setTimeout(() => {
+        const section = document.getElementById(`comments-${postId}`);
+        if (section) { section.style.display = 'block'; loadComments(postId); }
+      }, 100);
+    } catch (err) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state__icon">😕</div>
+          <div class="empty-state__title">Post not found</div>
+          <a href="feed.html" class="btn btn-primary" style="margin-top:16px;">Go to Feed</a>
+        </div>`;
+    }
+  }
+</script>
+</body>
+</html>

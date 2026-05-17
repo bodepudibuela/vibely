@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register — Vibely</title>
+  <link rel="stylesheet" href="../css/main.css"/>
+  <style>
+    body { display: flex; min-height: 100vh; }
+
+    .auth-left {
+      width: 45%;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 60px; position: relative; overflow: hidden;
+    }
+    .auth-left::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(circle at 70% 30%, rgba(255,107,53,0.18) 0%, transparent 60%),
+                  radial-gradient(circle at 20% 80%, rgba(108,99,255,0.18) 0%, transparent 60%);
+    }
+    .auth-left__content { position: relative; z-index: 1; color: white; text-align: center; }
+    .auth-left__logo { font-family: var(--font-display); font-size: 3.5rem; font-weight: 800; color: var(--brand); letter-spacing: -2px; margin-bottom: 16px; }
+    .auth-left__tagline { font-size: 1.05rem; opacity: 0.7; max-width: 280px; line-height: 1.7; }
+
+    .feature-list { list-style: none; margin-top: 40px; text-align: left; }
+    .feature-list li {
+      display: flex; align-items: center; gap: 12px;
+      color: rgba(255,255,255,0.75); font-size: 0.9rem; margin-bottom: 14px;
+    }
+    .feature-list li::before {
+      content: '✓'; background: var(--brand); color: white;
+      width: 22px; height: 22px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; flex-shrink: 0;
+    }
+
+    .auth-right { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 24px; background: var(--bg); overflow-y: auto; }
+    .auth-box { width: min(440px, 100%); }
+    .auth-box__header { margin-bottom: 28px; }
+    .auth-box__title { font-family: var(--font-display); font-size: 2rem; margin-bottom: 6px; }
+    .auth-box__sub { color: var(--text-muted); font-size: 0.95rem; }
+    .auth-box__sub a { color: var(--brand); font-weight: 600; }
+
+    .name-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    .error-msg {
+      background: #ffeef0; border: 1px solid #f5c6cb;
+      color: #c0392b; border-radius: var(--radius-sm);
+      padding: 10px 14px; font-size: 0.88rem; margin-bottom: 16px; display: none;
+    }
+    [data-theme="dark"] .error-msg { background: #2d1215; border-color: #5c2a2a; color: #f87171; }
+
+    .password-strength { margin-top: 6px; }
+    .strength-bar { height: 4px; border-radius: 4px; background: var(--border); overflow: hidden; }
+    .strength-fill { height: 100%; border-radius: 4px; transition: all 0.3s; width: 0; }
+    .strength-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+
+    .terms-note { font-size: 0.78rem; color: var(--text-muted); text-align: center; margin-top: 14px; }
+    .terms-note a { color: var(--brand); }
+
+    @media (max-width: 768px) {
+      .auth-left { display: none; }
+      .name-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="auth-left">
+    <div class="auth-left__content">
+      <div class="auth-left__logo">Vibely</div>
+      <p class="auth-left__tagline">Join thousands of people sharing their world every day.</p>
+      <ul class="feature-list">
+        <li>Share photos and moments</li>
+        <li>Follow friends and creators</li>
+        <li>Like, comment, connect</li>
+        <li>Real-time notifications</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="auth-right">
+    <div class="auth-box">
+      <div class="auth-box__header">
+        <h1 class="auth-box__title">Create account ✨</h1>
+        <p class="auth-box__sub">Already have one? <a href="login.html">Sign in</a></p>
+      </div>
+
+      <div class="error-msg" id="error-msg"></div>
+
+      <form id="register-form" novalidate>
+        <div class="name-row">
+          <div class="form-group">
+            <label class="form-label" for="full_name">Full Name</label>
+            <input class="form-input" type="text" id="full_name" placeholder="Jane Doe" autocomplete="name"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="username">Username</label>
+            <input class="form-input" type="text" id="username" placeholder="jane_doe" required autocomplete="username"/>
+            <div id="username-status" style="font-size:0.78rem;margin-top:4px;display:none;"></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="email">Email</label>
+          <input class="form-input" type="email" id="email" placeholder="you@example.com" required autocomplete="email"/>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input class="form-input" type="password" id="password" placeholder="At least 6 characters" required autocomplete="new-password"/>
+          <div class="password-strength" id="strength-wrap" style="display:none">
+            <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+            <div class="strength-label" id="strength-label"></div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-full btn-lg" type="submit" id="register-btn">
+          Create Account
+        </button>
+      </form>
+
+      <p class="terms-note">By signing up you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a>.</p>
+    </div>
+  </div>
+
+  <script src="../js/api.js"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      Session.redirectIfAuth('feed.html');
+      if (localStorage.getItem('vb_theme') === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    });
+
+    // Password strength meter
+    const pwdInput     = document.getElementById('password');
+    const strengthWrap = document.getElementById('strength-wrap');
+    const strengthFill = document.getElementById('strength-fill');
+    const strengthLbl  = document.getElementById('strength-label');
+
+    pwdInput.addEventListener('input', () => {
+      const val = pwdInput.value;
+      if (!val) { strengthWrap.style.display = 'none'; return; }
+      strengthWrap.style.display = 'block';
+      let score = 0;
+      if (val.length >= 6)                       score++;
+      if (val.length >= 10)                      score++;
+      if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
+      if (/[0-9]/.test(val))                     score++;
+      if (/[^A-Za-z0-9]/.test(val))              score++;
+
+      const levels = [
+        { label: 'Very weak',  color: '#e74c3c', width: '20%' },
+        { label: 'Weak',       color: '#e67e22', width: '40%' },
+        { label: 'Fair',       color: '#f1c40f', width: '60%' },
+        { label: 'Strong',     color: '#2ecc71', width: '80%' },
+        { label: 'Very strong',color: '#27ae60', width: '100%' },
+      ];
+      const lvl = levels[Math.min(score - 1, 4)] || levels[0];
+      strengthFill.style.width      = lvl.width;
+      strengthFill.style.background = lvl.color;
+      strengthLbl.textContent       = lvl.label;
+      strengthLbl.style.color       = lvl.color;
+    });
+
+    // Auto-format username: lowercase, no spaces
+    const usernameInput = document.getElementById('username');
+    const usernameStatus = document.getElementById('username-status');
+    let usernameTimer;
+
+    usernameInput.addEventListener('input', function() {
+      this.value = this.value.toLowerCase().replace(/\s/g, '_');
+      const val = this.value.trim();
+
+      clearTimeout(usernameTimer);
+      usernameStatus.style.display = 'none';
+
+      if (val.length < 3) return;
+
+      usernameStatus.style.display = 'block';
+      usernameStatus.style.color = 'var(--text-muted)';
+      usernameStatus.textContent = 'Checking...';
+
+      usernameTimer = setTimeout(async () => {
+        try {
+          const data = await API.Users.search(val);
+          const taken = data.users.some(u => u.username === val);
+          if (taken) {
+            usernameStatus.textContent = '❌ @' + val + ' is already taken';
+            usernameStatus.style.color = '#e74c3c';
+            usernameInput.style.borderColor = '#e74c3c';
+          } else {
+            usernameStatus.textContent = '✅ @' + val + ' is available!';
+            usernameStatus.style.color = '#2ecc71';
+            usernameInput.style.borderColor = '#2ecc71';
+          }
+        } catch {
+          usernameStatus.style.display = 'none';
+          usernameInput.style.borderColor = '';
+        }
+      }, 500);
+    });
+
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const full_name = document.getElementById('full_name').value.trim();
+      const username  = document.getElementById('username').value.trim();
+      const email     = document.getElementById('email').value.trim();
+      const password  = document.getElementById('password').value;
+      const btn       = document.getElementById('register-btn');
+      const errEl     = document.getElementById('error-msg');
+
+      errEl.style.display = 'none';
+      btn.disabled    = true;
+      btn.textContent = 'Creating account…';
+
+      try {
+        const data = await API.Auth.register({ full_name, username, email, password });
+        Session.save(data.token, data.user);
+        window.location.href = 'feed.html';
+      } catch (err) {
+        errEl.textContent   = err.message;
+        errEl.style.display = 'block';
+        btn.disabled        = false;
+        btn.textContent     = 'Create Account';
+      }
+    });
+  </script>
+</body>
+</html>

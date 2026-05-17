@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Explore — Vibely</title>
+  <link rel="stylesheet" href="../css/main.css"/>
+  <style>
+    .explore-header { margin-bottom: 24px; }
+    .explore-header h2 { font-family: var(--font-display); font-size: 1.6rem; margin-bottom: 16px; }
+
+    /* Grid layout for explore */
+    .explore-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    /* Tabs */
+    .explore-tabs { display: flex; gap: 4px; margin-bottom: 24px; }
+    .explore-tab {
+      padding: 8px 20px; border-radius: var(--radius-full);
+      border: 1.5px solid var(--border); background: transparent;
+      color: var(--text-secondary); font-weight: 600; font-size: 0.88rem;
+      cursor: pointer; transition: all var(--transition);
+      font-family: var(--font-body);
+    }
+    .explore-tab.active { background: var(--brand); color: white; border-color: var(--brand); }
+    .explore-tab:hover:not(.active) { border-color: var(--brand); color: var(--brand); }
+
+    /* User search results */
+    .user-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .user-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 24px 16px;
+      text-align: center; transition: box-shadow var(--transition);
+    }
+    .user-card:hover { box-shadow: var(--shadow-md); }
+    .user-card img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; margin: 0 auto 12px; border: 3px solid var(--brand-light); }
+    .user-card__name { font-weight: 700; font-size: 0.95rem; margin-bottom: 2px; }
+    .user-card__handle { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px; }
+    .user-card__bio { font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Compact post card for grid */
+    .grid-post-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden;
+      transition: box-shadow var(--transition); cursor: pointer;
+    }
+    .grid-post-card:hover { box-shadow: var(--shadow-md); }
+    .grid-post-card__image { width: 100%; height: 220px; object-fit: cover; }
+    .grid-post-card__no-image {
+      height: 120px; background: linear-gradient(135deg, var(--brand-light), var(--accent-light));
+      display: flex; align-items: center; justify-content: center; font-size: 2rem;
+    }
+    .grid-post-card__body { padding: 14px; }
+    .grid-post-card__user { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .grid-post-card__user img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+    .grid-post-card__username { font-weight: 700; font-size: 0.82rem; }
+    .grid-post-card__caption { font-size: 0.85rem; color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .grid-post-card__stats { display: flex; gap: 12px; margin-top: 10px; font-size: 0.78rem; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+<div class="vb-layout">
+  <div class="vb-main">
+    <div style="max-width:960px;margin:0 auto;">
+      <div class="explore-header">
+        <h2>🔍 Explore</h2>
+        <!-- Search bar -->
+        <div class="search-bar" style="max-width:100%;margin-bottom:20px;">
+          <span class="search-bar__icon">🔍</span>
+          <input class="search-bar__input" id="search-input" type="text" placeholder="Search people by name or username…" autocomplete="off"/>
+          <div class="search-results" id="search-results"></div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="explore-tabs">
+          <button class="explore-tab active" data-tab="posts" onclick="switchTab('posts', this)">Posts</button>
+          <button class="explore-tab" data-tab="people" onclick="switchTab('people', this)">People</button>
+        </div>
+      </div>
+
+      <!-- Posts grid -->
+      <div id="posts-tab">
+        <div class="explore-grid" id="explore-grid"></div>
+        <div class="spinner" id="explore-spinner"></div>
+        <button id="explore-load-more" class="btn btn-secondary" style="display:none;margin:20px auto;display:none;" onclick="loadExplorePage()">Load more</button>
+      </div>
+
+      <!-- People grid -->
+      <div id="people-tab" style="display:none;">
+        <div class="user-grid" id="people-grid"></div>
+        <div class="spinner" id="people-spinner" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script src="../js/layout.js"></script>
+<script src="../js/socket.js"></script>
+<script src="../js/posts.js"></script>
+<script>
+  // Smart image picker — each post gets a UNIQUE relevant image
+  function getPostImage(post) {
+    const caption = (post.caption || '').toLowerCase();
+    const id = post.id;
+
+    const categoryImages = {
+      food:        [292,431,1080,488,433,326,429,835,493,404,1025,1060,312,452,376],
+      photography: [96,250,364,375,593,667,683,736,753,815,823,870,880,890,901],
+      travel:      [137,338,358,371,428,443,452,461,466,469,474,477,480,490,502],
+      music:       [157,183,224,248,311,374,449,470,531,541,552,560,570,580,590],
+      art:         [159,188,211,219,266,312,322,345,380,386,393,396,410,420,440],
+      technology:  [0,1,2,3,4,5,6,7,8,9,48,119,180,239,299],
+      sports:      [76,115,173,214,247,261,310,328,389,395,441,467,503,543,583],
+      nature:      [15,28,37,39,40,41,42,43,44,45,46,47,51,52,53],
+      fitness:     [185,194,209,225,231,241,253,263,271,281,289,298,307,317,327],
+      books:       [159,160,161,162,163,164,165,166,167,168,169,170,171,172,173],
+      lifestyle:   [64,65,66,67,68,69,70,71,72,73,74,75,77,78,79],
+    };
+
+    const keywords = [
+      { keys: ['food','eat','recipe','cook','biryani','pizza','burger','coffee','snack','street food','restaurant','meal','cuisine','lunch','dinner','breakfast','punugulu','pesarattu','hungry'], cat: 'food' },
+      { keys: ['photo','camera','photography','shot','canon','nikon','lens','capture','portrait','film photography'], cat: 'photography' },
+      { keys: ['travel','trip','tour','visit','destination','journey','adventure','vijayawada','hyderabad','beach','mountain','valley','araku'], cat: 'travel' },
+      { keys: ['music','guitar','song','sing','concert','band','piano','drums','practice log','melody','lo-fi'], cat: 'music' },
+      { keys: ['art','sketch','draw','paint','design','creative','artist','canvas','illustration','inspiration'], cat: 'art' },
+      { keys: ['code','coding','bug','debug','developer','programming','software','javascript','python','tech','laptop'], cat: 'technology' },
+      { keys: ['cricket','match','sport','football','game','player','team','score','stadium','kohli','india vs','australia'], cat: 'sports' },
+      { keys: ['nature','sky','sunset','sunrise','flower','tree','garden','forest','rain','cloud'], cat: 'nature' },
+      { keys: ['gym','workout','exercise','run','yoga','fitness','muscle','rest day','training'], cat: 'fitness' },
+      { keys: ['book','read','study','atomic habits','novel','library','pages','reading'], cat: 'books' },
+    ];
+
+    let cat = 'lifestyle';
+    for (const k of keywords) {
+      if (k.keys.some(kw => caption.includes(kw))) { cat = k.cat; break; }
+    }
+
+    const imgs = categoryImages[cat];
+    const imgId = imgs[id % imgs.length];
+    return `https://picsum.photos/id/${imgId}/600/400`;
+  }
+  let explorePage = 1, exploreLoading = false, exploreHasMore = true;
+  let currentTab = 'posts';
+
+  window.addEventListener('DOMContentLoaded', () => {
+    if (!Session.requireAuth('login.html')) return;
+    renderLayout('explore');
+    initSocket();
+    loadExplorePosts(true);
+    setupSearch();
+  });
+
+  function switchTab(tab, btn) {
+    currentTab = tab;
+    document.querySelectorAll('.explore-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('posts-tab').style.display  = tab === 'posts'  ? 'block' : 'none';
+    document.getElementById('people-tab').style.display = tab === 'people' ? 'block' : 'none';
+    if (tab === 'people') loadPeople();
+  }
+
+  async function loadExplorePosts(reset = false) {
+    if (exploreLoading) return;
+    if (reset) { explorePage = 1; exploreHasMore = true; document.getElementById('explore-grid').innerHTML = ''; }
+    exploreLoading = true;
+    document.getElementById('explore-spinner').style.display = 'block';
+
+    try {
+      const data = await API.Posts.explore(explorePage);
+      exploreHasMore = data.pagination.hasMore;
+      const grid = document.getElementById('explore-grid');
+
+      data.posts.forEach(post => {
+        const card = document.createElement('div');
+        card.className = 'grid-post-card';
+        card.innerHTML = `
+          ${post.image_url
+            ? `<img class="grid-post-card__image" src="${Helpers.postImageUrl(post.image_url)}" alt="post" loading="lazy"/>`
+            : `<img class="grid-post-card__image" src="${getPostImage(post)}" alt="post" loading="lazy"/>`}
+          <div class="grid-post-card__body">
+            <div class="grid-post-card__user">
+              <img src="${Helpers.avatarUrl(post.avatar)}" alt="${post.username}"
+                   onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(post.username)}&background=FF6B35&color=fff'"/>
+              <a href="profile.html?u=${post.username}" class="grid-post-card__username">${post.username}</a>
+            </div>
+            ${post.caption ? `<p class="grid-post-card__caption">${escapeHtml(post.caption)}</p>` : ''}
+            <div class="grid-post-card__stats">
+              <span>❤️ ${post.likes_count}</span>
+              <span>💬 ${post.comments_count}</span>
+              <span>${Helpers.timeAgo(post.created_at)}</span>
+            </div>
+          </div>`;
+        grid.appendChild(card);
+      });
+
+      explorePage++;
+      const lmBtn = document.getElementById('explore-load-more');
+      lmBtn.style.display = exploreHasMore ? 'block' : 'none';
+
+      if (!data.posts.length && explorePage === 2) {
+        grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-state__icon">📭</div><div class="empty-state__title">No posts yet</div></div>`;
+      }
+    } catch (err) { showToast(err.message, 'error'); }
+    finally {
+      exploreLoading = false;
+      document.getElementById('explore-spinner').style.display = 'none';
+    }
+  }
+
+  function loadExplorePage() { if (exploreHasMore) loadExplorePosts(false); }
+
+  async function loadPeople() {
+    const grid    = document.getElementById('people-grid');
+    const spinner = document.getElementById('people-spinner');
+    if (grid.children.length) return; // already loaded
+    spinner.style.display = 'block';
+    try {
+      const data = await API.Posts.explore(1);
+      const seen = new Set(); const users = [];
+      data.posts.forEach(p => { if (!seen.has(p.user_id)) { seen.add(p.user_id); users.push(p); } });
+      grid.innerHTML = users.map(u => `
+        <div class="user-card">
+          <a href="profile.html?u=${u.username}">
+            <img src="${Helpers.avatarUrl(u.avatar)}" alt="${u.username}"
+                 onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=FF6B35&color=fff'"/>
+          </a>
+          <div class="user-card__name"><a href="profile.html?u=${u.username}">${u.full_name || u.username}</a></div>
+          <div class="user-card__handle">@${u.username}</div>
+          <button class="btn btn-primary btn-sm follow-btn" onclick="handleFollow(${u.user_id}, this)">Follow</button>
+        </div>`).join('');
+    } catch { } finally { spinner.style.display = 'none'; }
+  }
+
+  async function handleFollow(userId, btn) {
+    try {
+      const data = await API.Users.follow(userId);
+      btn.textContent = data.following ? 'Following' : 'Follow';
+      btn.classList.toggle('following', data.following);
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+
+  // ─── Search ────────────────────────────────────────────────────────────────
+  function setupSearch() {
+    const input   = document.getElementById('search-input');
+    const results = document.getElementById('search-results');
+    let debounceTimer;
+
+    input.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      const q = input.value.trim();
+      if (!q) { results.classList.remove('open'); return; }
+      debounceTimer = setTimeout(() => doSearch(q), 300);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.search-bar')) results.classList.remove('open');
+    });
+  }
+
+  async function doSearch(q) {
+    const results = document.getElementById('search-results');
+    results.innerHTML = '<div style="padding:12px;color:var(--text-muted);font-size:.85rem;">Searching…</div>';
+    results.classList.add('open');
+    try {
+      const data = await API.Users.search(q);
+      if (!data.users.length) {
+        results.innerHTML = '<div style="padding:12px;color:var(--text-muted);font-size:.85rem;">No users found.</div>';
+        return;
+      }
+      results.innerHTML = data.users.map(u => `
+        <div class="search-result-item" onclick="window.location.href='profile.html?u=${u.username}'">
+          <img src="${Helpers.avatarUrl(u.avatar)}" alt="${u.username}"
+               onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=FF6B35&color=fff'"/>
+          <div>
+            <div class="search-result-name">${u.full_name || u.username}</div>
+            <div class="search-result-user">@${u.username}</div>
+          </div>
+        </div>`).join('');
+    } catch { results.innerHTML = '<div style="padding:12px;color:#e74c3c;font-size:.85rem;">Search failed.</div>'; }
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // Infinite scroll
+  window.addEventListener('scroll', () => {
+    if (currentTab !== 'posts') return;
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 300) {
+      if (exploreHasMore && !exploreLoading) loadExplorePosts(false);
+    }
+  });
+</script>
+</body>
+</html>

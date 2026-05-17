@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Home — Vibely</title>
+  <link rel="stylesheet" href="../css/main.css"/>
+  <style>
+    .feed-wrapper {
+      max-width: 620px;
+      margin: 0 auto;
+    }
+    .feed-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .feed-header h2 { font-family: var(--font-display); font-size: 1.6rem; }
+
+    /* Story-like quick create */
+    .quick-create {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 18px;
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 20px;
+      cursor: pointer;
+      transition: box-shadow var(--transition);
+    }
+    .quick-create:hover { box-shadow: var(--shadow-md); }
+    .quick-create img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid var(--brand); }
+    .quick-create__prompt {
+      flex: 1;
+      background: var(--bg-input);
+      border-radius: var(--radius-full);
+      padding: 10px 18px;
+      color: var(--text-muted);
+      font-size: 0.92rem;
+    }
+
+    #load-more-btn {
+      width: 100%; margin: 8px 0 32px;
+      background: var(--bg-card);
+      border: 1.5px dashed var(--border);
+      color: var(--text-muted);
+      border-radius: var(--radius-full);
+      padding: 12px;
+      font-size: 0.9rem;
+      font-family: var(--font-body);
+      transition: all var(--transition);
+    }
+    #load-more-btn:hover { border-color: var(--brand); color: var(--brand); }
+    #load-more-btn:disabled { opacity: 0.5; }
+
+    /* Suggestion sidebar */
+    .feed-page-grid {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 28px;
+      max-width: 920px;
+      margin: 0 auto;
+    }
+    .suggestions-panel { display: block; }
+
+    .suggest-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 20px; position: sticky; top: 24px;
+    }
+    .suggest-card h4 { font-family: var(--font-display); font-size: 1rem; margin-bottom: 14px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .suggest-item { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .suggest-item img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; }
+    .suggest-item-info { flex: 1; min-width: 0; }
+    .suggest-item-name { font-weight: 700; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .suggest-item-user { font-size: 0.75rem; color: var(--text-muted); }
+    .suggest-follow-btn { font-size: 0.78rem; padding: 5px 12px; border-radius: var(--radius-full); background: var(--brand); color: white; border: none; font-weight: 600; cursor: pointer; transition: opacity .2s; }
+    .suggest-follow-btn:hover { opacity: 0.85; }
+
+    @media (max-width: 900px) {
+      .feed-page-grid { grid-template-columns: 1fr; }
+      .suggestions-panel { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div id="splash-screen" style="
+  position: fixed; inset: 0; z-index: 9999;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  transition: opacity 0.6s ease;
+">
+  <div style="font-family:'Syne',sans-serif;font-size:5rem;font-weight:800;color:#FF6B35;letter-spacing:-4px;animation:splashPop 0.8s cubic-bezier(.175,.885,.32,1.275) forwards;">Vibely</div>
+  <div style="color:rgba(255,255,255,0.5);font-size:1rem;margin-top:12px;letter-spacing:2px;animation:splashFade 0.8s 0.3s ease forwards;opacity:0;">Connect & Share</div>
+  <style>
+    @keyframes splashPop { from{opacity:0;transform:scale(0.5)} to{opacity:1;transform:scale(1)} }
+    @keyframes splashFade { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  </style>
+</div>
+<script>
+  setTimeout(() => {
+    const s = document.getElementById('splash-screen');
+    if(s){ s.style.opacity='0'; setTimeout(()=>s.remove(),600); }
+  }, 2000);
+</script>
+<div class="vb-layout">
+  <div class="vb-main">
+    <div class="feed-page-grid">
+      <!-- Feed column -->
+      <div>
+        <div class="feed-header">
+          <h2>Your Feed</h2>
+          <button class="btn btn-primary btn-sm" onclick="openCreateModal()">+ New Post</button>
+        </div>
+
+        <!-- Quick create bar -->
+        <div class="quick-create" onclick="openCreateModal()" id="quick-create-bar">
+          <img src="" alt="me" id="quick-avatar" onerror="this.src='https://ui-avatars.com/api/?name=U&background=6c63ff&color=fff'"/>
+          <div class="quick-create__prompt">What's on your mind?</div>
+        </div>
+
+        <!-- Feed posts -->
+        <div id="feed-container"></div>
+
+        <div class="spinner" id="feed-spinner"></div>
+        <button id="load-more-btn" style="display:none" onclick="loadMore()">Load more posts ↓</button>
+        <div id="empty-feed" style="display:none">
+          <div style="text-align:center;padding:12px 0 20px;color:var(--text-muted);font-size:0.9rem;">
+            Suggested posts — follow people to personalise your feed!
+          </div>
+          <div id="suggested-posts-container"></div>
+        </div>
+      </div>
+
+      <!-- Suggestions sidebar -->
+      <aside class="suggestions-panel">
+        <div class="suggest-card">
+          <h4>People to follow</h4>
+          <div id="suggestions-list"><div class="spinner"></div></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script src="../js/layout.js"></script>
+<script src="../js/socket.js"></script>
+<script src="../js/posts.js"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    if (!Session.requireAuth('login.html')) return;
+    renderLayout('feed');
+    initSocket();
+
+    const me = Session.getUser();
+    const qAvatar = document.getElementById('quick-avatar');
+    qAvatar.src = Helpers.avatarUrl(me.avatar);
+
+    loadFeed(true);
+    loadSuggestions();
+  });
+
+  let feedPage = 1;
+  let feedLoading = false;
+  let feedHasMore = true;
+
+  async function loadFeed(reset = false) {
+    if (feedLoading) return;
+    if (reset) { feedPage = 1; feedHasMore = true; document.getElementById('feed-container').innerHTML = ''; }
+    feedLoading = true;
+    document.getElementById('feed-spinner').style.display = 'block';
+    document.getElementById('load-more-btn').style.display = 'none';
+
+    try {
+      const data = await API.Posts.feed(feedPage);
+      feedHasMore = data.pagination.hasMore;
+      renderPosts(data.posts, 'feed-container', feedPage > 1);
+      feedPage++;
+
+      if (!data.posts.length && feedPage === 2) {
+        document.getElementById('empty-feed').style.display = 'block';
+        loadSuggestedPosts();
+      } else {
+        document.getElementById('empty-feed').style.display = 'none';
+      }
+      if (feedHasMore) document.getElementById('load-more-btn').style.display = 'block';
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      feedLoading = false;
+      document.getElementById('feed-spinner').style.display = 'none';
+    }
+  }
+
+  function loadMore() { if (feedHasMore) loadFeed(false); }
+
+  // Infinite scroll
+  window.addEventListener('scroll', () => {
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 300) {
+      if (feedHasMore && !feedLoading) loadFeed(false);
+    }
+  });
+
+  async function loadSuggestions() {
+    try {
+      // Show explore posts as user suggestions (fetch top users from explore)
+      const data = await API.Posts.explore(1);
+      const seen = new Set();
+      const users = [];
+      data.posts.forEach(p => {
+        if (!seen.has(p.user_id) && p.user_id !== Session.getUser().id) {
+          seen.add(p.user_id);
+          users.push(p);
+        }
+      });
+      const list = document.getElementById('suggestions-list');
+      if (!users.length) { list.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;">No suggestions yet</p>'; return; }
+      list.innerHTML = users.slice(0, 5).map(u => `
+        <div class="suggest-item">
+          <img src="${Helpers.avatarUrl(u.avatar)}" alt="${u.username}" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=FF6B35&color=fff'"/>
+          <div class="suggest-item-info">
+            <div class="suggest-item-name">${u.full_name || u.username}</div>
+            <div class="suggest-item-user">@${u.username}</div>
+          </div>
+          <button class="suggest-follow-btn" onclick="quickFollow(${u.user_id}, this)">Follow</button>
+        </div>
+      `).join('');
+    } catch { /* silent */ }
+  }
+
+  async function loadSuggestedPosts() {
+    try {
+      const data = await API.Posts.explore(1);
+      if (data.posts && data.posts.length) {
+        renderPosts(data.posts, 'suggested-posts-container', false);
+      }
+    } catch (err) { console.log('Could not load suggested posts'); }
+  }
+
+  async function quickFollow(userId, btn) {
+    try {
+      const data = await API.Users.follow(userId);
+      btn.textContent = data.following ? 'Following' : 'Follow';
+      btn.style.background = data.following ? 'var(--border)' : 'var(--brand)';
+      btn.style.color = data.following ? 'var(--text-secondary)' : 'white';
+    } catch (err) { showToast(err.message, 'error'); }
+  }
+</script>
+</body>
+</html>
