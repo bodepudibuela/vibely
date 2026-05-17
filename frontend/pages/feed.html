@@ -82,26 +82,6 @@
   </style>
 </head>
 <body>
-<div id="splash-screen" style="
-  position: fixed; inset: 0; z-index: 9999;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  transition: opacity 0.6s ease;
-">
-  <div style="font-family:'Syne',sans-serif;font-size:5rem;font-weight:800;color:#FF6B35;letter-spacing:-4px;animation:splashPop 0.8s cubic-bezier(.175,.885,.32,1.275) forwards;">Vibely</div>
-  <div style="color:rgba(255,255,255,0.5);font-size:1rem;margin-top:12px;letter-spacing:2px;animation:splashFade 0.8s 0.3s ease forwards;opacity:0;">Connect & Share</div>
-  <style>
-    @keyframes splashPop { from{opacity:0;transform:scale(0.5)} to{opacity:1;transform:scale(1)} }
-    @keyframes splashFade { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-  </style>
-</div>
-<script>
-  setTimeout(() => {
-    const s = document.getElementById('splash-screen');
-    if(s){ s.style.opacity='0'; setTimeout(()=>s.remove(),600); }
-  }, 2000);
-</script>
 <div class="vb-layout">
   <div class="vb-main">
     <div class="feed-page-grid">
