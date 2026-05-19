@@ -3,7 +3,7 @@
 //  VIBELY — Centralised API helper
 // =============================================
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = 'https://vibely-backend-390p.onrender.com/api';
 
 // ─── Token helpers ────────────────────────────────────────────────────────────
 const getToken  = ()        => localStorage.getItem('vibely_token');
@@ -117,12 +117,12 @@ function avatarUrl(filename) {
     return `https://ui-avatars.com/api/?name=User&background=6c63ff&color=fff&size=128`;
   }
   if (filename.startsWith('http')) return filename;
-  return `http://localhost:5000/uploads/avatars/${filename}`;
+  return `https://vibely-7muu.onrender.com/uploads/avatars/${filename}`;
 }
 
 function postImageUrl(filename) {
   if (!filename) return null;
-  return `http://localhost:5000/uploads/posts/${filename}`;
+  return `https://vibely-7muu.onrender.com/uploads/posts/${filename}`;
 }
 
 function timeAgo(dateStr) {
