@@ -3,7 +3,7 @@
 //  VIBELY — Centralised API helper
 // =============================================
 
-const API_BASE = 'https://vibely-backend-390p.onrender.com/api';
+const API_BASE = 'https://vibely-7muu.onrender.com/api';
 
 // ─── Token helpers ────────────────────────────────────────────────────────────
 const getToken  = ()        => localStorage.getItem('vibely_token');
