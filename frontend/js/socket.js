@@ -9,9 +9,9 @@ function initSocket() {
 
   // Load socket.io client from the server
   const script = document.createElement('script');
-  script.src = 'http://localhost:5000/socket.io/socket.io.js';
+ script.src = 'https://vibely-7muu.onrender.com/socket.io/socket.io.js';
   script.onload = () => {
-    socket = io('http://localhost:5000');
+    socket = io('https://vibely-7muu.onrender.com');
 
     socket.on('connect', () => {
       socket.emit('user:online', user.id);

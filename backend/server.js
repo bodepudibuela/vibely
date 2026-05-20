@@ -97,3 +97,8 @@ server.listen(PORT, () => {
   console.log(`📡  Socket.io ready`);
   console.log(`🗄️   API base: http://localhost:${PORT}/api\n`);
 });
+app.get("/", (req, res) => {
+  res.json({ message: "Vibely API is running!" });
+});
+
+app.get("/favicon.ico", (req, res) => res.status(204).end());
